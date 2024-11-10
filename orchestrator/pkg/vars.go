@@ -1,5 +1,6 @@
 package pkg
 
 const (
-	TopicJobs = "jobs"
+	TopicJobs      = "jobs"
+	TopicInference = "inference"
 )

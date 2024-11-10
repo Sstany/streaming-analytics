@@ -2,7 +2,8 @@ package main
 
 import (
 	"context"
-	"corgiAnalytics/runner/internal/controller"
+
+	"corgiAnalytics/runner/internal/entity"
 	"corgiAnalytics/runner/internal/runner"
 	"os"
 
@@ -20,8 +21,8 @@ func main() {
 	}
 
 	client := redis.NewClient(&redis.Options{
-		Addr:     os.Getenv(controller.EnvRedis),
-		Password: os.Getenv(controller.EnvRedisPassword),
+		Addr:     os.Getenv(entity.EnvRedis),
+		Password: os.Getenv(entity.EnvRedisPassword),
 		DB:       1,
 	})
 
@@ -30,8 +31,8 @@ func main() {
 		panic(err)
 	}
 
-	brokers := []string{os.Getenv(controller.EnvKafka)}
-	runnerService := runner.New(logger, brokers)
+	brokers := []string{os.Getenv(entity.EnvKafka)}
+	runnerService := runner.New(logger, brokers, client)
 	runnerService.Start()
 	runnerService.Wait()
 

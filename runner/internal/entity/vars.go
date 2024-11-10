@@ -1,4 +1,4 @@
-package controller
+package entity
 
 const (
 	EnvHost = "ENV_HOST"
@@ -7,4 +7,6 @@ const (
 	EnvRedis         = "REDIS_ADDR"
 	EnvRedisPassword = "REDIS_PASSWORD"
 	EnvKafka         = "KAFKA_ADDRESS"
+
+	EnvCount = "WORKERS_COUNT"
 )
