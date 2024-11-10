@@ -30,6 +30,7 @@ func (r *VideoFramer) Start(job entity.Job) error {
 	}
 
 	r.stream = video
+	r.jobID = job.ID
 	img := gocv.NewMat()
 	r.img = &img
 
@@ -57,12 +58,14 @@ func (r *VideoFramer) Next() (*entity.Frame, error) {
 	r.sequence++
 
 	return &entity.Frame{
-		// Id:        r.jobID,
-		Id:        uuid.NewString(),
-		Sequence:  int32(r.sequence),
-		Rows:      int32(r.img.Rows()),
-		Cols:      int32(r.img.Cols()),
-		FrameType: int32(r.img.Type()),
-		Payload:   r.img.ToBytes(),
+		FrameMeta: entity.FrameMeta{
+			JobID:     r.jobID,
+			ID:        uuid.NewString(),
+			Sequence:  int32(r.sequence),
+			Rows:      int32(r.img.Rows()),
+			Cols:      int32(r.img.Cols()),
+			FrameType: int32(r.img.Type()),
+		},
+		Payload: r.img.ToBytes(),
 	}, nil
 }

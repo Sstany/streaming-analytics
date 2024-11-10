@@ -22,12 +22,12 @@ const (
 )
 
 type Service struct {
+	brokers      []string
 	consumer     sarama.Consumer
 	partConsumer sarama.PartitionConsumer
-	wg           *sync.WaitGroup
-	brokers      []string
-	jobChan      chan entity.Job
 	producer     sarama.SyncProducer
+	wg           *sync.WaitGroup
+	jobChan      chan entity.Job
 	redis        *redis.Client
 	framer       framer.Framer
 	logger       *zap.Logger
@@ -69,7 +69,7 @@ func (r *Service) Start() {
 	brokers := []string{KafkaServer1}
 	producer, err := ConnectProducer(brokers)
 	if err != nil {
-		log.Fatalf("create producer: $w", zap.Error(err))
+		panic(fmt.Errorf("create producer: %w", err))
 	}
 
 	r.producer = producer
@@ -89,9 +89,10 @@ func (r *Service) Start() {
 }
 
 func (r *Service) Stop() {
-	defer r.consumer.Close()
-
+	r.consumer.Close()
 	r.partConsumer.Close()
+	r.producer.Close()
+	close(r.jobChan)
 }
 
 func (r *Service) Wait() {
@@ -125,10 +126,13 @@ func (r *Service) startFramer() {
 					break
 				}
 
-				db.PostFrame(r.redis, fr.Id, fr)
-				r.logger.Info("frame", zap.String("frame id", fr.Id))
+				if err := db.PostFrame(r.redis, fr.ID, fr); err != nil {
+					r.logger.Error("post frame meta", zap.Error(err))
+				}
 
-				frame, err := json.Marshal(fr)
+				r.logger.Info("frame", zap.String("frame id", fr.ID))
+
+				frame, err := json.Marshal(&fr.FrameMeta)
 				if err != nil {
 					r.logger.Error("marshal: %w", zap.Error(err))
 				}
