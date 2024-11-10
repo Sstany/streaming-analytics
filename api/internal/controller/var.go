@@ -1,4 +1,4 @@
-package server
+package controller
 
 const (
 	EnvHost            = "API_HOST"

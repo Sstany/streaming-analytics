@@ -1,0 +1,85 @@
+version: "4.0"
+volumes:
+  postgres_data:
+  kafka_data:
+  redis_data:
+  zoo_data:
+services:
+  postgres:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: "postgres"
+      POSTGRES_USER: "user"
+      POSTGRES_PASSWORD: "hhhhh"
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+  redis:
+    image: redis/redis-stack-server:7.2.0-v6
+    restart: always
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/root/redis
+      # - /path/to/local/redis.conf:/usr/local/etc/redis/redis.conf
+    environment:
+       REDIS_PASSWORD: ${REDIS_PASSWORD:-password}
+       REDIS_PORT: ${REDIS_PORT:-6379} 
+       REDIS_DATABASES: 1
+  zookeeper:
+    image: confluentinc/cp-zookeeper:latest
+    environment:
+      ZOOKEEPER_SERVER_ID: 1
+      ZOOKEEPER_TICK_TIME: 2000
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_INIT_LIMIT: 5
+      ZOOKEEPER_SYNC_LIMIT: 2
+      ZOOKEEPER_SERVERS: zookeeper:2888:3888
+    healthcheck:
+      test: echo stat | nc localhost 2181
+      interval: 10s
+      timeout: 10s
+      retries: 3
+    volumes:
+      - zoo_data:/var/lib/zookeeper/log
+      - zoo_data:/etc/zookeeper/secrets
+      - zoo_data:/var/lib/zookeeper/data
+    ports:
+      - "2181:2181"
+      - "2888:2888"
+      - "3888:3888"
+  kafka:
+    image: confluentinc/cp-kafka:latest
+    healthcheck:
+      test: ps augwwx | egrep [S]upportedKafka
+    depends_on:
+      - zookeeper
+    ports:
+      - "9091:9091"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_LISTENERS: LISTENER_INT://kafka:29091,LISTENER_EXT://0.0.0.0:9091
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: LISTENER_INT://kafka:29091,LISTENER_EXT://localhost:9091
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: LISTENER_INT:PLAINTEXT,LISTENER_EXT:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: LISTENER_INT
+      ZOOKEEPER: zookeeper:2181
+    volumes:
+      - kafka_data:/mnt/shared/config
+      - kafka_data:/var/lib/kafka/data
+      - kafka_data:/etc/kafka/secrets
+
+  # core:
+  #   restart: always
+  #   depends_on:
+  #       - "postgres"
+  #   container_name: core
+  #   build:
+  #       dockerfile: Dockerfile
+  #       context: .
+  #   environment:
+  #     POSTGRES: postgresql://username:password@postgres:5432/test?sslmode=disable
+  #     HOST: 0.0.0.0:8891
+  #   # ports:
+  #   #   - '8088:8088'
