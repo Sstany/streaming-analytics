@@ -4,7 +4,10 @@ import (
 	"corgiAnalytics/orchestrator/internal/db"
 	"corgiAnalytics/orchestrator/internal/entity"
 	"corgiAnalytics/orchestrator/internal/orchestrator"
+	"database/sql"
+	"errors"
 	"net/http"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -55,7 +58,20 @@ func (r *Server) newAPI() *gin.Engine {
 }
 
 func (r *Server) getJob(ctx *gin.Context) {
+	jobID := ctx.Param("id")
 
+	job, err := r.dbClient.GetJob(ctx, jobID)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			ctx.AbortWithStatus(http.StatusNotFound)
+			return
+		}
+		r.logger.Error("get job failed", zap.String("jobID", jobID), zap.Error(err))
+		ctx.AbortWithStatus(http.StatusInternalServerError)
+		return
+	}
+
+	ctx.JSON(http.StatusOK, job)
 }
 
 func (r *Server) createJob(ctx *gin.Context) {
@@ -67,11 +83,19 @@ func (r *Server) createJob(ctx *gin.Context) {
 		return
 	}
 
-	reg.Status = entity.Created
+	reg.Status = entity.Init
 	reg.ID = uuid.NewString()
+	reg.Timestamp = time.Now().UnixMilli()
+
+	if err := r.dbClient.CreateJob(ctx, &reg); err != nil {
+		r.logger.Error("create job", zap.Error(err))
+		ctx.AbortWithStatus(http.StatusInternalServerError)
+		return
+	}
 
 	r.orchestrator.Send(reg)
-	ctx.Status(http.StatusOK)
+
+	ctx.JSON(http.StatusOK, reg)
 }
 
 func (r *Server) updateJob(ctx *gin.Context) {

@@ -115,6 +115,13 @@ func (r *Service) Start() error {
 
 	}()
 
+	// r.wg.Add(1)
+
+	// go func() {
+	// 	defer r.wg.Done()
+	// 	r.dbClient.UpdateJob()
+	// }()
+
 	r.logger.Info("start orchestrator")
 
 	return nil

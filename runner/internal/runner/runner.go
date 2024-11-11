@@ -248,7 +248,7 @@ func (r *Service) startSaver() {
 
 		fp := r.runPath + frame.JobID + "/" + strconv.Itoa(int(frame.Sequence)) + frame.ID + "-" + ".jpg"
 		ok := gocv.IMWrite(fp, img)
-		r.logger.Info("write image to file", zap.String("filepath", fp), zap.Bool("ok", ok))
+		r.logger.Debug("write image to file", zap.String("filepath", fp), zap.Bool("ok", ok))
 		img.Close()
 	}
 }
