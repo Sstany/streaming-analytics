@@ -32,7 +32,8 @@ func main() {
 	}
 
 	brokers := []string{os.Getenv(entity.EnvKafka)}
-	runnerService := runner.New(logger, brokers, client)
+	runPath := os.Getenv(entity.EnvRunPath)
+	runnerService := runner.New(logger, runPath, brokers, client)
 	runnerService.Start()
 	runnerService.Wait()
 
