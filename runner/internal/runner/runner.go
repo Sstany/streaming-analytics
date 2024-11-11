@@ -117,6 +117,14 @@ func (r *Service) consume() {
 		}
 		r.logger.Info("get job: %w", zap.Any("job:", job))
 
+		if _, _, err := r.producer.SendMessage(&sarama.ProducerMessage{
+			Topic: pkg.TopicJobs,
+			Key:   sarama.StringEncoder(job.ID),
+			Value: sarama.StringEncoder(entity.Startup),
+		}); err != nil {
+			r.logger.Error("send startup msg failed", zap.String("jobID", job.ID), zap.Error(err))
+		}
+
 		r.jobChan <- job
 	}
 }
@@ -132,7 +140,18 @@ func (r *Service) startFramer() {
 				}
 			}
 
-			r.framer.Start(j)
+			if err := r.framer.Start(j); err != nil {
+				r.logger.Error("start framer", zap.Error(err))
+				continue
+			}
+
+			if _, _, err := r.producer.SendMessage(&sarama.ProducerMessage{
+				Topic: pkg.TopicJobs,
+				Key:   sarama.StringEncoder(j.ID),
+				Value: sarama.StringEncoder(entity.Active),
+			}); err != nil {
+				r.logger.Error("send finished msg failed", zap.String("jobID", j.ID), zap.Error(err))
+			}
 
 			for {
 				fr, err := r.framer.Next()
@@ -171,10 +190,12 @@ func (r *Service) startFramer() {
 				}
 			}
 
-			r.logger.Info("finished processing job")
+			r.logger.Info("finished processing job", zap.String("job", j.ID))
 
 			if _, _, err := r.producer.SendMessage(&sarama.ProducerMessage{
-				Topic: pkg.TopicJobs,
+				Topic: "status",
+				Key:   sarama.StringEncoder(j.ID),
+				Value: sarama.StringEncoder(entity.Inactive),
 			}); err != nil {
 				r.logger.Error("send finished msg failed", zap.String("jobID", j.ID), zap.Error(err))
 			}
@@ -251,22 +272,4 @@ func (r *Service) startSaver() {
 		r.logger.Debug("write image to file", zap.String("filepath", fp), zap.Bool("ok", ok))
 		img.Close()
 	}
-}
-
-func (r *Service) produce(topic string, message *entity.Job) error {
-	res, err := json.Marshal(message)
-	if err != nil {
-		return fmt.Errorf("marshal: %w", err)
-	}
-	msg := &sarama.ProducerMessage{
-		Topic: topic,
-		Value: sarama.StringEncoder(res),
-	}
-
-	_, _, err = r.producer.SendMessage(msg)
-	if err != nil {
-		return err
-	}
-
-	return nil
 }

@@ -1,12 +1,15 @@
 package entity
 
-type Status int
+type Status string
 
 const (
-	Init Status = iota
-	Created
-	InProgress
-	Done
+	Undefined          Status = "UNDEFINED"
+	Init               Status = "INIT"
+	Startup            Status = "STARTUP"
+	Active             Status = "ACTIVE"
+	Shutdown           Status = "SHUTDOWN"
+	ShutdownProcessing Status = "SHUTDOWN_PROCESSING"
+	Inactive           Status = "INACTIVE"
 )
 
 type Job struct {

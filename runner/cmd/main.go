@@ -12,9 +12,6 @@ import (
 )
 
 func main() {
-	// host := os.Getenv(controller.EnvHost)
-	// port := os.Getenv(controller.EnvPort)
-
 	logger, err := zap.NewProduction()
 	if err != nil {
 		panic(err)
@@ -36,6 +33,4 @@ func main() {
 	runnerService := runner.New(logger, runPath, brokers, client)
 	runnerService.Start()
 	runnerService.Wait()
-
-	// controller.NewServer(host, port, runnerService, logger).Start()
 }

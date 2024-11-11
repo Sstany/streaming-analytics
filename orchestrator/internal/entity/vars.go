@@ -8,7 +8,7 @@ const (
 	Startup            Status = "STARTUP"
 	Active             Status = "ACTIVE"
 	Shutdown           Status = "SHUTDOWN"
-	ShutdownProcessing Status = "STATUS_PROCESSING"
+	ShutdownProcessing Status = "SHUTDOWN_PROCESSING"
 	Inactive           Status = "INACTIVE"
 )
 

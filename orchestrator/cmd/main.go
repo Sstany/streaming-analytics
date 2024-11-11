@@ -21,9 +21,9 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-
+	kafkaURL := os.Getenv(controller.EnvKafka)
 	postgresClient := db.NewPostgresClient(context.Background(), os.Getenv(controller.EnvPostgres), logger)
 
-	orchestratorService := orchestrator.New(*postgresClient, logger)
+	orchestratorService := orchestrator.New(*postgresClient, logger, []string{kafkaURL})
 	controller.NewServer(host, port, *postgresClient, orchestratorService, logger).Start()
 }
